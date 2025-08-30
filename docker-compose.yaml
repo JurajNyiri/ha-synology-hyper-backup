@@ -2,7 +2,7 @@ services:
   homeassistant:
     image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
-      - ./_dev/config:/config
+      - ./.homeassistant/config:/config
       - ./custom_components:/config/custom_components
     restart: unless-stopped
     privileged: true
