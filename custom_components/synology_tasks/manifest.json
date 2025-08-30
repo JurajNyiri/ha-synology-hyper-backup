@@ -3,9 +3,11 @@
     "name": "Synology Tasks",
     "documentation": "https://github.com/bbckr/hacs-synology-tasks",
     "issue_tracker": "https://github.com/bbckr/hacs-synology-tasks/issues",
-    "integration_type": "sensor",
+    "dependencies": ["synology_dsm"],
+    "integration_type": "hub",
     "codeowners": ["@bbckr"],
-    "requirements": ["requests"],
+    "requirements": [],
     "version": "0.1.0",
-    "iot_class": "cloud_polling"
+    "config_flow": true,
+    "iot_class": "local_polling"
 }
