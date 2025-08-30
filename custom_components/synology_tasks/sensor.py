@@ -10,6 +10,13 @@ class SynologyAuthResponse(TypedDict):
     )
     success: bool
 
+class SynologyTaskSchedulerListResponse(TypedDict):
+    data: TypedDict(
+        "SynologyTaskSchedulerListData",
+        {"tasks": list[TypedDict("SynologyTaskSchedulerData", {"name": str, "action": str, "can_delete": bool, "can_edit": bool, "can_run": bool, "enable": bool, "id": int, "next_trigger_time": str, "owner": str, "type": str})], "total": int}
+    )
+    success: bool
+
 def main():
     verify_ssl = os.getenv("VERIFY_SSL", "True") == "True"
     host = os.getenv("SYNOLOGY_HOST")
@@ -32,6 +39,23 @@ def main():
     print(r.text)
     sid = response.get("data").get("sid")
     print(sid)
+
+    # load the task list
+    params = {
+        "api": "SYNO.Core.TaskScheduler",
+        "method": "list",
+        "version": "3",
+        "sort_by": "name",
+        "sort_direction": "asc",
+        "limit": "50",
+        "offset": "0",
+        "SynoToken": response.get("data").get("synotoken")
+    }
+    r = s.get(f"{host}/webapi/entry.cgi", params=params, verify=verify_ssl)
+    print(r.text)
+    response: SynologyTaskSchedulerListResponse = r.json()
+    print(response.get("data").get("tasks"))
+
 
     # run the task
     params = {
