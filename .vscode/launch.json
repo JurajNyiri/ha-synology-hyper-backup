@@ -1,14 +1,22 @@
 {
-    "configurations": [
+  "configurations": [
+    {
+      // Debug by attaching to remote Home Asistant server using Remote Python Debugger.
+      // See https://www.home-assistant.io/integrations/debugpy/
+      "name": "Home Assistant: Attach Remote",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "0.0.0.0",
+        "port": 5678
+      },
+      "pathMappings": [
         {
-            "name": "Python: Debug Current File",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "custom_components/synology_tasks/sensor.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "envFile": "${workspaceFolder}/.env",
-            "justMyCode": false
-        }
-    ]
+          "localRoot": "${workspaceFolder}/custom_components/synology_tasks",
+          "remoteRoot": "/config/custom_components/synology_tasks"
+        } 
+      ],
+      "justMyCode": false
+    }
+  ]
 }
