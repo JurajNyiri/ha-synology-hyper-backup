@@ -1,0 +1,11 @@
+{
+    "domain": "synology_tasks",
+    "name": "Synology Tasks",
+    "documentation": "https://github.com/bbckr/hacs-synology-tasks",
+    "issue_tracker": "https://github.com/bbckr/hacs-synology-tasks/issues",
+    "integration_type": "sensor",
+    "codeowners": ["@bbckr"],
+    "requirements": ["requests"],
+    "version": "0.1.0",
+    "iot_class": "cloud_polling"
+}
