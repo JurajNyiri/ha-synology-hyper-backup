@@ -1,0 +1,9 @@
+services:
+  homeassistant:
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - ./custom_components:/config/custom_components
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - 8123:8123
