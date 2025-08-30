@@ -38,6 +38,7 @@ def main():
     response: SynologyAuthResponse = r.json()
     print(r.text)
     sid = response.get("data").get("sid")
+    synotoken = response.get("data").get("synotoken")
     print(sid)
 
     # load the task list
@@ -49,7 +50,7 @@ def main():
         "sort_direction": "asc",
         "limit": "50",
         "offset": "0",
-        "SynoToken": response.get("data").get("synotoken")
+        "SynoToken": synotoken
     }
     r = s.get(f"{host}/webapi/entry.cgi", params=params, verify=verify_ssl)
     print(r.text)
@@ -65,7 +66,7 @@ def main():
         "stop_when_error": "false",
         "mode": "sequential",
         "compound": "[{\"api\":\"SYNO.Core.EventScheduler\",\"method\":\"run\",\"version\":1,\"task_name\":\"Sync Media\"}]",
-        "SynoToken": response.get("data").get("synotoken")
+        "SynoToken": synotoken
     }
     r = s.get(f"{host}/webapi/entry.cgi", params=params, verify=verify_ssl)
     print(r.text)
@@ -73,7 +74,7 @@ def main():
     # logout
     params = {
         "api": "SYNO.API.Auth",
-        "version": "6",
+        "version": "7",
         "method": "logout",
         "_sid": sid
     }
