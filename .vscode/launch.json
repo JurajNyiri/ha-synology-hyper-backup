@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "Python: Debug Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "custom_components/synology_tasks/sensor.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
