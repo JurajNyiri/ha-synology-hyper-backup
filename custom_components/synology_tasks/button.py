@@ -1,20 +1,15 @@
-"""Support for Synology DSM Task sensors."""
+"""Support for Synology DSM Task buttons."""
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 import logging
 
-from homeassistant.components.sensor import (
-    SensorEntity,
-    SensorEntityDescription,
-)
+from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -26,7 +21,7 @@ from .const import (
     ATTR_TASK_OWNER,
     ATTR_TASK_TYPE,
     DOMAIN,
-    KEY_STATUS,
+    KEY_RUN,
 )
 from .coordinator import SynologyTasksCoordinator
 from .models import Task
@@ -35,34 +30,31 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class SynologyTaskSensorEntityDescription(SensorEntityDescription):
-    """Class describing Synology task sensor entities."""
-
-    value_fn: Callable[[Task], StateType] = lambda task: None
+class SynologyTaskButtonEntityDescription(ButtonEntityDescription):
+    """Class describing Synology task button entities."""
 
 
-TASK_SENSORS = [
-    SynologyTaskSensorEntityDescription(
-        key=KEY_STATUS,
-        translation_key="task_status",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda task: "enabled" if task.enabled else "disabled",
+TASK_BUTTONS = [
+    SynologyTaskButtonEntityDescription(
+        key=KEY_RUN,
+        translation_key="task_run",
+        entity_category=EntityCategory.CONFIG,
     ),
 ]
 
 
-class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEntity):
-    """Representation of a Synology task sensor."""
+class SynologyTaskButton(CoordinatorEntity[SynologyTasksCoordinator], ButtonEntity):
+    """Representation of a Synology task button."""
 
-    entity_description: SynologyTaskSensorEntityDescription
+    entity_description: SynologyTaskButtonEntityDescription
 
     def __init__(
         self,
         coordinator: SynologyTasksCoordinator,
         task: Task,
-        entity_description: SynologyTaskSensorEntityDescription,
+        entity_description: SynologyTaskButtonEntityDescription,
     ) -> None:
-        """Initialize the sensor."""
+        """Initialize the button."""
         super().__init__(coordinator)
         self.entity_description = entity_description
         self._task = task
@@ -76,12 +68,12 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
         self._attr_name = None  # Use the task name as the device name
         self._attr_device_name = task.name
 
-    @property
-    def native_value(self) -> StateType:
-        """Return the state of the sensor."""
+    async def async_press(self) -> None:
+        """Handle the button press."""
         if not (task := self._get_task()):
-            return None
-        return self.entity_description.value_fn(task)
+            return
+        await self.coordinator.api.run_task(task.name)
+        await self.coordinator.async_request_refresh()
 
     @property
     def extra_state_attributes(self) -> dict[str, str | int | bool | datetime | None]:
@@ -114,18 +106,18 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Synology task sensors."""
+    """Set up the Synology task buttons."""
     coordinator: SynologyTasksCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
     @callback
-    def _create_entities(tasks: list[Task]) -> list[SynologyTaskSensor]:
-        """Create sensor entities for the tasks."""
-        entities: list[SynologyTaskSensor] = []
+    def _create_entities(tasks: list[Task]) -> list[SynologyTaskButton]:
+        """Create button entities for the tasks."""
+        entities: list[SynologyTaskButton] = []
 
         for task in tasks:
-            for description in TASK_SENSORS:
+            for description in TASK_BUTTONS:
                 entities.append(
-                    SynologyTaskSensor(
+                    SynologyTaskButton(
                         coordinator=coordinator,
                         task=task,
                         entity_description=description,

@@ -2,7 +2,7 @@
 from typing import Final
 
 DOMAIN: Final = "synology_tasks"
-PLATFORMS: Final = ["sensor"]
+PLATFORMS: Final = ["sensor", "button"]
 
 # Configuration
 CONF_COORDINATOR = "coordinator"
@@ -32,6 +32,16 @@ ATTR_TASK_OWNER = "task_owner"
 ATTR_TASK_ENABLED = "task_enabled"
 ATTR_NEXT_RUN_TIME = "next_run_time"
 ATTR_CAN_RUN = "can_run"
+
+# Entity naming
+ENTITY_DOMAIN_SENSOR = "sensor"
+ENTITY_DOMAIN_BUTTON = "button"
+ENTITY_CATEGORY_DIAGNOSTIC = "diagnostic"
+ENTITY_CATEGORY_CONFIG = "config"
+
+# Entity key patterns
+KEY_STATUS = "status"
+KEY_RUN = "run_task"
 
 # Default values
 DEFAULT_SCAN_INTERVAL = 60  # seconds

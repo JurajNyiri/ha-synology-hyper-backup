@@ -4,7 +4,7 @@ run_task:
   target:
     entity:
       integration: synology_tasks
-      domain: sensor
+      domain: button
   fields:
     task_name:
       name: Task Name
