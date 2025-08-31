@@ -1,85 +1,142 @@
-import requests
-import os
-from typing import TypedDict
+"""Support for Synology DSM Task sensors."""
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
+import logging
+
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+)
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import StateType
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import (
+    ATTR_CAN_RUN,
+    ATTR_NEXT_RUN_TIME,
+    ATTR_TASK_ENABLED,
+    ATTR_TASK_ID,
+    ATTR_TASK_NAME,
+    ATTR_TASK_OWNER,
+    ATTR_TASK_TYPE,
+    DOMAIN,
+)
+from .coordinator import SynologyTasksCoordinator
+from .models import Task
+
+_LOGGER = logging.getLogger(__name__)
 
 
-class SynologyAuthResponse(TypedDict):
-    data: TypedDict(
-        "SynologyAuthData",
-        {"account": str, "device_id": str, "ik_message": str, "is_portal_port": bool, "sid": str, "synotoken": str}
+@dataclass(frozen=True)
+class SynologyTaskSensorEntityDescription(SensorEntityDescription):
+    """Class describing Synology task sensor entities."""
+
+    value_fn: Callable[[Task], StateType] = lambda task: None
+
+
+TASK_SENSORS = [
+    SynologyTaskSensorEntityDescription(
+        key="task_status",
+        translation_key="task_status",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda task: "enabled" if task.enabled else "disabled",
+    ),
+    SynologyTaskSensorEntityDescription(
+        key="next_run",
+        translation_key="next_run",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda task: task.next_run_time,
+    ),
+]
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the Synology task sensors."""
+    coordinator: SynologyTasksCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+
+    @callback
+    def _create_entities(tasks: list[Task]) -> list[SynologyTaskSensor]:
+        """Create sensor entities for the tasks."""
+        entities: list[SynologyTaskSensor] = []
+
+        for task in tasks:
+            for description in TASK_SENSORS:
+                entities.append(
+                    SynologyTaskSensor(
+                        coordinator=coordinator,
+                        task=task,
+                        entity_description=description,
+                    )
+                )
+
+        return entities
+
+    coordinator.async_add_listener(
+        lambda: async_add_entities(_create_entities(coordinator.data))
     )
-    success: bool
 
-class SynologyTaskSchedulerListResponse(TypedDict):
-    data: TypedDict(
-        "SynologyTaskSchedulerListData",
-        {"tasks": list[TypedDict("SynologyTaskSchedulerData", {"name": str, "action": str, "can_delete": bool, "can_edit": bool, "can_run": bool, "enable": bool, "id": int, "next_trigger_time": str, "owner": str, "type": str})], "total": int}
-    )
-    success: bool
-
-def main():
-    verify_ssl = os.getenv("VERIFY_SSL", "True") == "True"
-    host = os.getenv("SYNOLOGY_HOST")
-    pw = os.getenv("SYNOLOGY_PASSWORD")
-    user = os.getenv("SYNOLOGY_USER")
-
-    s = requests.Session()
-
-    params = {
-        "api": "SYNO.API.Auth",
-        "version": "7",
-        "method": "login",
-        "enable_syno_token": "yes",
-        "account": user,
-        "passwd": pw,
-    }
-
-    r = s.get(f"{host}/webapi/entry.cgi", params=params, verify=verify_ssl)
-    response: SynologyAuthResponse = r.json()
-    print(r.text)
-    sid = response.get("data").get("sid")
-    synotoken = response.get("data").get("synotoken")
-    print(sid)
-
-    # load the task list
-    params = {
-        "api": "SYNO.Core.TaskScheduler",
-        "method": "list",
-        "version": "3",
-        "sort_by": "name",
-        "sort_direction": "asc",
-        "limit": "50",
-        "offset": "0",
-        "SynoToken": synotoken
-    }
-    r = s.get(f"{host}/webapi/entry.cgi", params=params, verify=verify_ssl)
-    print(r.text)
-    response: SynologyTaskSchedulerListResponse = r.json()
-    print(response.get("data").get("tasks"))
+    async_add_entities(_create_entities(coordinator.data))
 
 
-    # run the task
-    params = {
-        "api": "SYNO.Entry.Request",
-        "method": "request",
-        "version": "1",
-        "stop_when_error": "false",
-        "mode": "sequential",
-        "compound": "[{\"api\":\"SYNO.Core.EventScheduler\",\"method\":\"run\",\"version\":1,\"task_name\":\"Sync Media\"}]",
-        "SynoToken": synotoken
-    }
-    r = s.get(f"{host}/webapi/entry.cgi", params=params, verify=verify_ssl)
-    print(r.text)
+class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEntity):
+    """Representation of a Synology task sensor."""
 
-    # logout
-    params = {
-        "api": "SYNO.API.Auth",
-        "version": "7",
-        "method": "logout",
-        "_sid": sid
-    }
-    r = s.get(f"{host}/webapi/entry.cgi", params=params, verify=verify_ssl)
-    print(r.text)
+    entity_description: SynologyTaskSensorEntityDescription
 
-if __name__ == "__main__":
-    main()
+    def __init__(
+        self,
+        coordinator: SynologyTasksCoordinator,
+        task: Task,
+        entity_description: SynologyTaskSensorEntityDescription,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self.entity_description = entity_description
+        self._task = task
+        self._attr_unique_id = f"{task.id}_{entity_description.key}"
+        self._attr_device_info = None  # Tasks don't have a physical device
+        self._attr_has_entity_name = True
+        self._attr_name = task.name
+
+    @property
+    def native_value(self) -> StateType:
+        """Return the state of the sensor."""
+        if not (task := self._get_task()):
+            return None
+        return self.entity_description.value_fn(task)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | int | bool | datetime | None]:
+        """Return the state attributes."""
+        if not (task := self._get_task()):
+            return {}
+
+        return {
+            ATTR_TASK_ID: task.id,
+            ATTR_TASK_NAME: task.name,
+            ATTR_TASK_TYPE: task.type,
+            ATTR_TASK_OWNER: task.owner,
+            ATTR_TASK_ENABLED: task.enabled,
+            ATTR_NEXT_RUN_TIME: task.next_run_time,
+            ATTR_CAN_RUN: task.can_run,
+        }
+
+    def _get_task(self) -> Task | None:
+        """Get the task data from the coordinator."""
+        if not self.coordinator.data:
+            return None
+        return next(
+            (task for task in self.coordinator.data if task.id == self._task.id),
+            None,
+        )
