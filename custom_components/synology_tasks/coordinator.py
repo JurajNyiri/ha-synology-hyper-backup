@@ -29,12 +29,12 @@ class SynologyTasksCoordinator(DataUpdateCoordinator[list[Task]]):
             name=DOMAIN,
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
-        self._api = SynologyDSM(self.hass, dsm_entry)
+        self.api = SynologyDSM(self.hass, dsm_entry)
 
 
     async def _async_update_data(self) -> list[Task]:
         """Fetch data from API."""
         try:
-            return await self._api.get_tasks()
+            return await self.api.get_tasks()
         except Exception as err:
             raise UpdateFailed(f"Error communicating with API: {err}") from err
