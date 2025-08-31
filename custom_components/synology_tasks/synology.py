@@ -1,7 +1,6 @@
 """API client for Synology DSM."""
 from __future__ import annotations
 
-import json
 import logging
 from typing import List
 import requests
@@ -14,11 +13,8 @@ from .const import (
     API_LOGIN,
     API_METHOD_LOGIN,
     API_VERSION_LOGIN,
-    API_ENTRY_REQUEST,
-    API_METHOD_REQUEST,
     API_TASK_SCHEDULER,
     API_METHOD_TASK_SCHEDULER,
-    API_VERSION_REQUEST,
     API_VERSION_TASK_SCHEDULER,
     API_EVENT_SCHEDULER,
     API_METHOD_EVENT_SCHEDULER,
@@ -76,17 +72,10 @@ class SynologyDSM:
     async def run_task(self, task_name: str) -> None:
         """Run a task by name."""
         params = {
-            "api": API_ENTRY_REQUEST,
-            "method": API_METHOD_REQUEST,
-            "version": API_VERSION_REQUEST,
-            "stop_when_error": "false",
-            "mode": "sequential",
-            "compound": json.dumps({
-                "api": API_EVENT_SCHEDULER,
-                "method": API_METHOD_EVENT_SCHEDULER,
-                "version": API_VERSION_EVENT_SCHEDULER,
-                "task_name": task_name
-            })
+            "api": API_EVENT_SCHEDULER,
+            "method": API_METHOD_EVENT_SCHEDULER,
+            "version": API_VERSION_EVENT_SCHEDULER,
+            "task_name": task_name
         }
 
         try:
@@ -132,7 +121,9 @@ class SynologyDSM:
             raise SynologyDSMAPIErrorException from err
 
         if not response.get("success", False):
-            raise SynologyDSMAPIErrorException
+            _LOGGER.error("Error requesting: %s", r.text)
+            error_code = response.get("error", {}).get("code", "Unknown")
+            raise SynologyDSMAPIErrorException(f"Received error code: {error_code}")
 
         return response
 
