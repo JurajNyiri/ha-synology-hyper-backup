@@ -48,12 +48,6 @@ TASK_SENSORS = [
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda task: "enabled" if task.enabled else "disabled",
     ),
-    SynologyTaskSensorEntityDescription(
-        key="next_run",
-        translation_key="next_run",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=lambda task: task.next_run_time,
-    ),
 ]
 
 
