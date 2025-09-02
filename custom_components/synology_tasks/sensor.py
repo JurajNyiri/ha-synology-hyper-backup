@@ -84,8 +84,10 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
         
         # Set device info from the Synology DSM device
         if config_entry.data.get(CONFIG_DEVICE_IDENTIFIERS):
+            # Convert identifiers list back to set of tuples (JSON converts sets to lists)
+            identifiers = set(tuple(identifier) for identifier in config_entry.data[CONFIG_DEVICE_IDENTIFIERS])
             self._attr_device_info = DeviceInfo(
-                identifiers=config_entry.data[CONFIG_DEVICE_IDENTIFIERS],
+                identifiers=identifiers,
                 name=config_entry.data.get(CONFIG_DEVICE_NAME),
                 manufacturer=config_entry.data.get(CONFIG_DEVICE_MANUFACTURER),
                 model=config_entry.data.get(CONFIG_DEVICE_MODEL),
