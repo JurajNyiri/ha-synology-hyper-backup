@@ -11,6 +11,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
     ATTR_CAN_RUN,
@@ -53,6 +54,7 @@ class SynologyTaskButton(CoordinatorEntity[SynologyTasksCoordinator], ButtonEnti
         coordinator: SynologyTasksCoordinator,
         task: Task,
         entity_description: SynologyTaskButtonEntityDescription,
+        config_entry: ConfigEntry,
     ) -> None:
         """Initialize the button."""
         super().__init__(coordinator)
@@ -63,10 +65,20 @@ class SynologyTaskButton(CoordinatorEntity[SynologyTasksCoordinator], ButtonEnti
         task_name_id = "".join(c if c.isalnum() or c == " " else "_" for c in task.name)
         task_name_id = task_name_id.lower().replace(" ", "_")
         self._attr_unique_id = f"{task_name_id}_{task.id}_{entity_description.key}"
-        self._attr_device_info = None
-        self._attr_has_entity_name = True
-        self._attr_name = None  # Use the task name as the device name
-        self._attr_device_name = task.name
+        
+        # Set device info from the Synology DSM device
+        if config_entry.data.get("device_identifiers"):
+            self._attr_device_info = DeviceInfo(
+                identifiers=config_entry.data["device_identifiers"],
+                name=config_entry.data.get("device_name"),
+                manufacturer=config_entry.data.get("device_manufacturer"),
+                model=config_entry.data.get("device_model"),
+                sw_version=config_entry.data.get("device_sw_version"),
+            )
+        
+        # Set a clean display name - just the task name
+        self._attr_name = task.name
+        self._attr_has_entity_name = False
 
     async def async_press(self) -> None:
         """Handle the button press."""
@@ -121,6 +133,7 @@ async def async_setup_entry(
                         coordinator=coordinator,
                         task=task,
                         entity_description=description,
+                        config_entry=entry,
                     )
                 )
 

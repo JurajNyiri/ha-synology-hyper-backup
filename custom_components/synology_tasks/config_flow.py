@@ -9,6 +9,7 @@ from homeassistant.components.synology_dsm.const import DOMAIN as SYNOLOGY_DOMAI
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
 
 from .const import DOMAIN
 
@@ -79,6 +80,19 @@ class SynologyTasksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             await self.async_set_unique_id(user_input["dsm_entry_id"])
             self._abort_if_unique_id_configured()
+
+            # Get the device info for the Synology DSM instance.
+            device_registry = dr.async_get(self.hass)
+            # Find the device associated with the DSM config entry
+            dsm_devices = dr.async_entries_for_config_entry(device_registry, user_input["dsm_entry_id"])
+            if dsm_devices:
+                # Use the first device (there should typically be only one)
+                device_info = dsm_devices[0]
+                user_input["device_identifiers"] = device_info.identifiers
+                user_input["device_name"] = device_info.name
+                user_input["device_manufacturer"] = device_info.manufacturer
+                user_input["device_model"] = device_info.model
+                user_input["device_sw_version"] = device_info.sw_version
 
             # Create the config entry for the Synology Tasks integration.
             return self.async_create_entry(
