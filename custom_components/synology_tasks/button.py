@@ -46,6 +46,7 @@ TASK_BUTTONS = [
         key=KEY_RUN,
         translation_key=TRANSLATION_KEY_TASK_RUN,
         entity_category=EntityCategory.CONFIG,
+        icon="mdi:play",
     ),
 ]
 

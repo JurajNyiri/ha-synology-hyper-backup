@@ -54,6 +54,7 @@ TASK_SENSORS = [
     SynologyTaskSensorEntityDescription(
         key=KEY_STATUS,
         translation_key=TRANSLATION_KEY_TASK_STATUS,
+        icon="mdi:calendar-check",
         value_fn=lambda task: STATE_ENABLED if task.enabled else STATE_DISABLED,
     ),
 ]
