@@ -54,7 +54,6 @@ TASK_SENSORS = [
     SynologyTaskSensorEntityDescription(
         key=KEY_STATUS,
         translation_key=TRANSLATION_KEY_TASK_STATUS,
-        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda task: STATE_ENABLED if task.enabled else STATE_DISABLED,
     ),
 ]
