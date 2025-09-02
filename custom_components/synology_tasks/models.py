@@ -1,6 +1,5 @@
 """Data models for the Synology Tasks integration."""
 from dataclasses import dataclass
-from datetime import datetime
 from typing import TypedDict
 
 
