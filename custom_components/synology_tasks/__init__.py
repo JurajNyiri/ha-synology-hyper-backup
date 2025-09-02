@@ -1,4 +1,5 @@
 """The Synology Tasks integration."""
+
 from __future__ import annotations
 
 import logging
@@ -11,11 +12,11 @@ from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     CONF_COORDINATOR,
+    CONFIG_DSM_ENTRY_ID,
     DOMAIN,
     PLATFORMS,
-    SERVICE_RUN_TASK,
-    CONFIG_DSM_ENTRY_ID,
     SERVICE_DATA_TASK_NAME,
+    SERVICE_RUN_TASK,
 )
 from .coordinator import SynologyTasksCoordinator
 

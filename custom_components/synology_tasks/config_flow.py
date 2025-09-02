@@ -1,4 +1,5 @@
 """Config flow for Synology Tasks integration."""
+
 from __future__ import annotations
 
 import logging
@@ -6,23 +7,23 @@ from typing import Any
 
 from homeassistant import config_entries
 from homeassistant.components.synology_dsm.const import DOMAIN as SYNOLOGY_DOMAIN
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
-    DOMAIN,
-    CONFIG_DSM_ENTRY_ID,
     CONFIG_DEVICE_IDENTIFIERS,
-    CONFIG_DEVICE_NAME,
     CONFIG_DEVICE_MANUFACTURER,
     CONFIG_DEVICE_MODEL,
+    CONFIG_DEVICE_NAME,
     CONFIG_DEVICE_SW_VERSION,
-    STEP_USER,
+    CONFIG_DSM_ENTRY_ID,
+    DOMAIN,
+    REASON_INVALID_DSM_ENTRY,
     REASON_NO_DSM_INSTANCES,
     REASON_UNKNOWN,
-    REASON_INVALID_DSM_ENTRY,
+    STEP_USER,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,14 +31,16 @@ _LOGGER = logging.getLogger(__name__)
 
 async def validate_user_input(hass: HomeAssistant, data: dict[str, Any]) -> None:
     """Validate that the synology_dsm entry exists and is working."""
-    if not (dsm_entry := next(
-        (
-            entry
-            for entry in hass.config_entries.async_entries(SYNOLOGY_DOMAIN)
-            if entry.entry_id == data[CONFIG_DSM_ENTRY_ID]
-        ),
-        None,
-    )):
+    if not (
+        dsm_entry := next(
+            (
+                entry
+                for entry in hass.config_entries.async_entries(SYNOLOGY_DOMAIN)
+                if entry.entry_id == data[CONFIG_DSM_ENTRY_ID]
+            ),
+            None,
+        )
+    ):
         raise InvalidDSMEntry
 
     if not dsm_entry.state.recoverable:
@@ -73,9 +76,9 @@ class SynologyTasksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data_schema=self.add_suggested_values_to_schema(
                     config_entries.vol.Schema(
                         {
-                            config_entries.vol.Required(CONFIG_DSM_ENTRY_ID): config_entries.vol.In(
-                                dsm_entries
-                            ),
+                            config_entries.vol.Required(
+                                CONFIG_DSM_ENTRY_ID
+                            ): config_entries.vol.In(dsm_entries),
                         }
                     ),
                     user_input or {},
@@ -96,7 +99,9 @@ class SynologyTasksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Get the device info for the Synology DSM instance.
             device_registry = dr.async_get(self.hass)
             # Find the device associated with the DSM config entry
-            dsm_devices = dr.async_entries_for_config_entry(device_registry, user_input[CONFIG_DSM_ENTRY_ID])
+            dsm_devices = dr.async_entries_for_config_entry(
+                device_registry, user_input[CONFIG_DSM_ENTRY_ID]
+            )
             if dsm_devices:
                 # Use the first device (there should typically be only one)
                 device_info = dsm_devices[0]
@@ -112,6 +117,8 @@ class SynologyTasksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data=user_input,
             )
 
+
 class InvalidDSMEntry(HomeAssistantError):
     """Error to indicate the DSM entry is invalid."""
+
     reason = REASON_INVALID_DSM_ENTRY

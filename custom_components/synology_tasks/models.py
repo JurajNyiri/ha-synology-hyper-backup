@@ -1,4 +1,5 @@
 """Data models for the Synology Tasks integration."""
+
 from dataclasses import dataclass
 from typing import TypedDict
 
@@ -57,7 +58,6 @@ class Task:
     @classmethod
     def from_api(cls, data: SynologyTaskData) -> "Task":
         """Create Task from API response data."""
-
         return cls(
             id=data["id"],
             name=data["name"],

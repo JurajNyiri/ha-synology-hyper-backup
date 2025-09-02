@@ -1,17 +1,18 @@
 """Support for Synology DSM Task buttons."""
+
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
-import logging
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
     ATTR_CAN_RUN,
@@ -21,13 +22,13 @@ from .const import (
     ATTR_TASK_NAME,
     ATTR_TASK_OWNER,
     ATTR_TASK_TYPE,
-    DOMAIN,
-    KEY_RUN,
     CONFIG_DEVICE_IDENTIFIERS,
-    CONFIG_DEVICE_NAME,
     CONFIG_DEVICE_MANUFACTURER,
     CONFIG_DEVICE_MODEL,
+    CONFIG_DEVICE_NAME,
     CONFIG_DEVICE_SW_VERSION,
+    DOMAIN,
+    KEY_RUN,
     TRANSLATION_KEY_TASK_RUN,
 )
 from .coordinator import SynologyTasksCoordinator
@@ -72,11 +73,14 @@ class SynologyTaskButton(CoordinatorEntity[SynologyTasksCoordinator], ButtonEnti
         task_name_id = "".join(c if c.isalnum() or c == " " else "_" for c in task.name)
         task_name_id = task_name_id.lower().replace(" ", "_")
         self._attr_unique_id = f"{task_name_id}_{task.id}_{entity_description.key}"
-        
+
         # Set device info from the Synology DSM device
         if config_entry.data.get(CONFIG_DEVICE_IDENTIFIERS):
             # Convert identifiers list back to set of tuples (JSON converts sets to lists)
-            identifiers = set(tuple(identifier) for identifier in config_entry.data[CONFIG_DEVICE_IDENTIFIERS])
+            identifiers = set(
+                tuple(identifier)
+                for identifier in config_entry.data[CONFIG_DEVICE_IDENTIFIERS]
+            )
             self._attr_device_info = DeviceInfo(
                 identifiers=identifiers,
                 name=config_entry.data.get(CONFIG_DEVICE_NAME),
@@ -84,7 +88,7 @@ class SynologyTaskButton(CoordinatorEntity[SynologyTasksCoordinator], ButtonEnti
                 model=config_entry.data.get(CONFIG_DEVICE_MODEL),
                 sw_version=config_entry.data.get(CONFIG_DEVICE_SW_VERSION),
             )
-        
+
         # Set a clean display name - just the task name
         self._attr_name = task.name
         self._attr_has_entity_name = False
@@ -128,7 +132,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Synology task buttons."""
-    coordinator: SynologyTasksCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    coordinator: SynologyTasksCoordinator = hass.data[DOMAIN][entry.entry_id][
+        "coordinator"
+    ]
 
     @callback
     def _create_entities(tasks: list[Task]) -> list[SynologyTaskButton]:
@@ -152,19 +158,21 @@ async def async_setup_entry(
     async_add_entities(_create_entities(coordinator.data))
 
     # Track existing entity IDs to avoid duplicates
-    existing_ids = {entity._attr_unique_id for entity in _create_entities(coordinator.data)}
+    existing_ids = {
+        entity._attr_unique_id for entity in _create_entities(coordinator.data)
+    }
 
     @callback
     def _async_update_entities() -> None:
         """Create new entities for new tasks."""
         new_entities = []
         current_entities = _create_entities(coordinator.data)
-        
+
         for entity in current_entities:
             if entity._attr_unique_id not in existing_ids:
                 new_entities.append(entity)
                 existing_ids.add(entity._attr_unique_id)
-        
+
         if new_entities:
             async_add_entities(new_entities)
 

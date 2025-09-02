@@ -1,15 +1,15 @@
 """Data update coordinator for Synology Tasks."""
-from datetime import timedelta
-import logging
 
-from homeassistant.core import HomeAssistant
+import logging
+from datetime import timedelta
+
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-
-from .synology import SynologyDSM
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .models import Task
+from .synology import SynologyDSM
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +30,6 @@ class SynologyTasksCoordinator(DataUpdateCoordinator[list[Task]]):
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
         self.api = SynologyDSM(self.hass, dsm_entry)
-
 
     async def _async_update_data(self) -> list[Task]:
         """Fetch data from API."""

@@ -1,4 +1,5 @@
 """Constants for the Synology Tasks integration."""
+
 from typing import Final
 
 DOMAIN: Final = "synology_tasks"

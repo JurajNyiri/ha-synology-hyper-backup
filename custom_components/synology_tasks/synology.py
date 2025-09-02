@@ -1,45 +1,51 @@
 """API client for Synology DSM."""
+
 from __future__ import annotations
 
 import logging
-from typing import List
-import requests
 
+import requests
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.config_entries import ConfigEntry
 
 from .const import (
-    API_LOGIN,
-    API_METHOD_LOGIN,
-    API_VERSION_LOGIN,
-    API_TASK_SCHEDULER,
-    API_METHOD_TASK_SCHEDULER,
-    API_VERSION_TASK_SCHEDULER,
+    API_ENABLE_SYNO_TOKEN,
     API_EVENT_SCHEDULER,
+    API_LOGIN,
     API_METHOD_EVENT_SCHEDULER,
-    API_VERSION_EVENT_SCHEDULER,
+    API_METHOD_LOGIN,
+    API_METHOD_TASK_SCHEDULER,
     API_SORT_BY_NAME,
     API_SORT_DIRECTION_ASC,
+    API_SYNO_TOKEN,
     API_TASK_LIMIT,
     API_TASK_OFFSET,
-    API_ENABLE_SYNO_TOKEN,
-    API_SYNO_TOKEN,
-    API_YES,
+    API_TASK_SCHEDULER,
     API_UNKNOWN,
-    DATA_KEY,
-    DATA_TASKS_KEY,
-    DATA_SID_KEY,
-    DATA_SYNOTOKEN_KEY,
-    DATA_SUCCESS_KEY,
-    DATA_ERROR_KEY,
-    DATA_CODE_KEY,
-    SERVICE_DATA_TASK_NAME,
+    API_VERSION_EVENT_SCHEDULER,
+    API_VERSION_LOGIN,
+    API_VERSION_TASK_SCHEDULER,
     API_WEBAPI_ENDPOINT,
-    PROTOCOL_HTTPS,
+    API_YES,
+    DATA_CODE_KEY,
+    DATA_ERROR_KEY,
+    DATA_KEY,
+    DATA_SID_KEY,
+    DATA_SUCCESS_KEY,
+    DATA_SYNOTOKEN_KEY,
+    DATA_TASKS_KEY,
     PROTOCOL_HTTP,
+    PROTOCOL_HTTPS,
+    SERVICE_DATA_TASK_NAME,
 )
-from .models import SynologyAuthData, Task, SynologyTaskData, SynologyResponse, SynologyTask
+from .models import (
+    SynologyAuthData,
+    SynologyResponse,
+    SynologyTask,
+    SynologyTaskData,
+    Task,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,12 +64,11 @@ class SynologyDSM:
         self._verify_ssl = dsm_entry.data.get("verify_ssl", True)
         self._username = dsm_entry.data.get("username")
         self._password = dsm_entry.data.get("password")
-        self._url = f"{ssl and PROTOCOL_HTTPS or PROTOCOL_HTTP}://{host}:{port}{API_WEBAPI_ENDPOINT}"
+        self._url = f"{(ssl and PROTOCOL_HTTPS) or PROTOCOL_HTTP}://{host}:{port}{API_WEBAPI_ENDPOINT}"
 
         self._session = None
         self._sid = None
         self._synotoken = None
-
 
     async def get_tasks(self) -> list[Task]:
         """Get list of tasks."""
@@ -78,15 +83,16 @@ class SynologyDSM:
         }
 
         try:
-            response = await self.hass.async_add_executor_job(self._sync_request, params)
+            response = await self.hass.async_add_executor_job(
+                self._sync_request, params
+            )
         except Exception as err:
             _LOGGER.error("Error getting tasks: %s", err)
             raise SynologyTaskRunError from err
 
         tasks_data: SynologyTaskData = response.get(DATA_KEY, {})
-        tasks: List[SynologyTask] = tasks_data.get(DATA_TASKS_KEY, [])
+        tasks: list[SynologyTask] = tasks_data.get(DATA_TASKS_KEY, [])
         return [Task.from_api(task) for task in tasks]
-
 
     async def run_task(self, task_name: str) -> None:
         """Run a task by name."""
@@ -94,7 +100,7 @@ class SynologyDSM:
             "api": API_EVENT_SCHEDULER,
             "method": API_METHOD_EVENT_SCHEDULER,
             "version": API_VERSION_EVENT_SCHEDULER,
-            SERVICE_DATA_TASK_NAME: task_name
+            SERVICE_DATA_TASK_NAME: task_name,
         }
 
         try:
@@ -102,7 +108,6 @@ class SynologyDSM:
         except Exception as err:
             _LOGGER.error("Error running task %s: %s", task_name, err)
             raise SynologyTaskRunError from err
-
 
     def _sync_login(self) -> None:
         """Login to the DSM."""
@@ -123,12 +128,13 @@ class SynologyDSM:
         self._sid = data.get(DATA_SID_KEY)
         self._synotoken = data.get(DATA_SYNOTOKEN_KEY)
 
-
-    def _sync_request(self, params: dict | None = None, is_login: bool = False) -> SynologyResponse:
+    def _sync_request(
+        self, params: dict | None = None, is_login: bool = False
+    ) -> SynologyResponse:
         """Do a request to the DSM."""
         if not is_login and (not self._sid or not self._synotoken or not self._session):
             self._sync_login()
-        
+
         params[API_SYNO_TOKEN] = self._synotoken
 
         response: SynologyResponse | None = None
@@ -137,12 +143,15 @@ class SynologyDSM:
             response = r.json()
         except Exception as err:
             _LOGGER.error("Error requesting: %s", err)
-            raise SynologyDSMAPIErrorException from err
+            raise SynologyDSMAPIError from err
 
         if not response.get(DATA_SUCCESS_KEY, False):
             _LOGGER.error("Error requesting: %s", r.text)
-            error_code = response.get(DATA_ERROR_KEY, {}).get(DATA_CODE_KEY, API_UNKNOWN)
-            raise SynologyDSMAPIErrorException(f"Received error code: {error_code}")
+            error_code = response.get(DATA_ERROR_KEY, {}).get(
+                DATA_CODE_KEY, API_UNKNOWN
+            )
+            error_message = f"Received error code: {error_code}"
+            raise SynologyDSMAPIError(error_message)
 
         return response
 
@@ -150,5 +159,6 @@ class SynologyDSM:
 class SynologyTaskRunError(HomeAssistantError):
     """Error to indicate the task run failed."""
 
-class SynologyDSMAPIErrorException(HomeAssistantError):
+
+class SynologyDSMAPIError(HomeAssistantError):
     """Error to indicate the DSM API error."""
