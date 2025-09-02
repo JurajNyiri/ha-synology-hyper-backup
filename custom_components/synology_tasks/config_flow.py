@@ -57,7 +57,7 @@ class SynologyTasksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Setup the initial Synology Tasks integration."""
+        """Configure the initial Synology Tasks integration."""
         # Only configure against Synology DSM instances that are setup
         # through the Home Assistant Core Synology DSM integration.
         dsm_entries = {

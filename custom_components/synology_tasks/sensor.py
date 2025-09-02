@@ -52,7 +52,7 @@ _LOGGER = logging.getLogger(__name__)
 class SynologyTaskSensorEntityDescription(SensorEntityDescription):
     """Class describing Synology task sensor entities."""
 
-    value_fn: Callable[[Task], StateType] = lambda task: None
+    value_fn: Callable[[Task], StateType] = lambda _: None
 
 
 TASK_SENSORS = [
@@ -157,15 +157,15 @@ async def async_setup_entry(
         entities: list[SynologyTaskSensor] = []
 
         for task in tasks:
-            for description in TASK_SENSORS:
-                entities.append(
-                    SynologyTaskSensor(
-                        coordinator=coordinator,
-                        task=task,
-                        entity_description=description,
-                        config_entry=entry,
-                    )
+            entities.extend(
+                SynologyTaskSensor(
+                    coordinator=coordinator,
+                    task=task,
+                    entity_description=description,
+                    config_entry=entry,
                 )
+                for description in TASK_SENSORS
+            )
 
         return entities
 

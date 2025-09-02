@@ -149,15 +149,15 @@ async def async_setup_entry(
         entities: list[SynologyTaskButton] = []
 
         for task in tasks:
-            for description in TASK_BUTTONS:
-                entities.append(
-                    SynologyTaskButton(
-                        coordinator=coordinator,
-                        task=task,
-                        entity_description=description,
-                        config_entry=entry,
-                    )
+            entities.extend(
+                SynologyTaskButton(
+                    coordinator=coordinator,
+                    task=task,
+                    entity_description=description,
+                    config_entry=entry,
                 )
+                for description in TASK_BUTTONS
+            )
 
         return entities
 
