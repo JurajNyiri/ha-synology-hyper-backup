@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant import config_entries
 from homeassistant.components.synology_dsm.const import DOMAIN as SYNOLOGY_DOMAIN
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 
@@ -26,6 +24,10 @@ from .const import (
     STEP_USER,
 )
 
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.data_entry_flow import FlowResult
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -41,10 +43,10 @@ async def validate_user_input(hass: HomeAssistant, data: dict[str, Any]) -> None
             None,
         )
     ):
-        raise InvalidDSMEntry
+        raise InvalidDSMEntryError
 
     if not dsm_entry.state.recoverable:
-        raise InvalidDSMEntry
+        raise InvalidDSMEntryError
 
 
 class SynologyTasksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -88,9 +90,10 @@ class SynologyTasksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Validate the selected Synology DSM instance.
         try:
             await validate_user_input(self.hass, user_input)
-        except InvalidDSMEntry as err:
+        except InvalidDSMEntryError as err:
             return self.async_abort(reason=err.reason)
         except Exception:
+            _LOGGER.exception("Unexpected error during config flow")
             return self.async_abort(reason=REASON_UNKNOWN)
         else:
             await self.async_set_unique_id(user_input[CONFIG_DSM_ENTRY_ID])
@@ -118,7 +121,7 @@ class SynologyTasksConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
 
-class InvalidDSMEntry(HomeAssistantError):
+class InvalidDSMEntryError(HomeAssistantError):
     """Error to indicate the DSM entry is invalid."""
 
     reason = REASON_INVALID_DSM_ENTRY

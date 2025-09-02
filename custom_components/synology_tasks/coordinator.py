@@ -36,4 +36,5 @@ class SynologyTasksCoordinator(DataUpdateCoordinator[list[Task]]):
         try:
             return await self.api.get_tasks()
         except Exception as err:
-            raise UpdateFailed(f"Error communicating with API: {err}") from err
+            msg = f"Error communicating with API: {err}"
+            raise UpdateFailed(msg) from err

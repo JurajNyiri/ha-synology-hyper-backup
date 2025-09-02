@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -32,7 +30,14 @@ from .const import (
     TRANSLATION_KEY_TASK_RUN,
 )
 from .coordinator import SynologyTasksCoordinator
-from .models import Task
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .models import Task
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -73,14 +78,16 @@ class SynologyTaskButton(CoordinatorEntity[SynologyTasksCoordinator], ButtonEnti
         task_name_id = "".join(c if c.isalnum() or c == " " else "_" for c in task.name)
         task_name_id = task_name_id.lower().replace(" ", "_")
         self._attr_unique_id = f"{task_name_id}_{task.id}_{entity_description.key}"
+        self.unique_id = self._attr_unique_id
 
         # Set device info from the Synology DSM device
         if config_entry.data.get(CONFIG_DEVICE_IDENTIFIERS):
-            # Convert identifiers list back to set of tuples (JSON converts sets to lists)
-            identifiers = set(
+            # Convert identifiers list back to set of tuples (JSON converts sets to
+            # lists)
+            identifiers = {
                 tuple(identifier)
                 for identifier in config_entry.data[CONFIG_DEVICE_IDENTIFIERS]
-            )
+            }
             self._attr_device_info = DeviceInfo(
                 identifiers=identifiers,
                 name=config_entry.data.get(CONFIG_DEVICE_NAME),
@@ -159,7 +166,7 @@ async def async_setup_entry(
 
     # Track existing entity IDs to avoid duplicates
     existing_ids = {
-        entity._attr_unique_id for entity in _create_entities(coordinator.data)
+        entity.unique_id for entity in _create_entities(coordinator.data)
     }
 
     @callback
@@ -169,9 +176,9 @@ async def async_setup_entry(
         current_entities = _create_entities(coordinator.data)
 
         for entity in current_entities:
-            if entity._attr_unique_id not in existing_ids:
+            if entity.unique_id not in existing_ids:
                 new_entities.append(entity)
-                existing_ids.add(entity._attr_unique_id)
+                existing_ids.add(entity.unique_id)
 
         if new_entities:
             async_add_entities(new_entities)

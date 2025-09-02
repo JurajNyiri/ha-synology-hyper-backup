@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import requests
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import (
@@ -46,6 +45,10 @@ from .models import (
     SynologyTaskData,
     Task,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,7 +90,7 @@ class SynologyDSM:
                 self._sync_request, params
             )
         except Exception as err:
-            _LOGGER.error("Error getting tasks: %s", err)
+            _LOGGER.exception("Error getting tasks")
             raise SynologyTaskRunError from err
 
         tasks_data: SynologyTaskData = response.get(DATA_KEY, {})
@@ -106,7 +109,7 @@ class SynologyDSM:
         try:
             await self.hass.async_add_executor_job(self._sync_request, params)
         except Exception as err:
-            _LOGGER.error("Error running task %s: %s", task_name, err)
+            _LOGGER.exception("Error running task %s", task_name)
             raise SynologyTaskRunError from err
 
     def _sync_login(self) -> None:
@@ -123,13 +126,13 @@ class SynologyDSM:
             "passwd": self._password,
         }
 
-        response = self._sync_request(params, True)
+        response = self._sync_request(params, is_login=True)
         data: SynologyAuthData = response.get(DATA_KEY, {})
         self._sid = data.get(DATA_SID_KEY)
         self._synotoken = data.get(DATA_SYNOTOKEN_KEY)
 
     def _sync_request(
-        self, params: dict | None = None, is_login: bool = False
+        self, params: dict | None = None, *, is_login: bool = False
     ) -> SynologyResponse:
         """Do a request to the DSM."""
         if not is_login and (not self._sid or not self._synotoken or not self._session):
@@ -142,7 +145,7 @@ class SynologyDSM:
             r = self._session.get(self._url, params=params, verify=self._verify_ssl)
             response = r.json()
         except Exception as err:
-            _LOGGER.error("Error requesting: %s", err)
+            _LOGGER.exception("Unable to get response form DSM")
             raise SynologyDSMAPIError from err
 
         if not response.get(DATA_SUCCESS_KEY, False):
