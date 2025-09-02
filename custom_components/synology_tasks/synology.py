@@ -19,6 +19,25 @@ from .const import (
     API_EVENT_SCHEDULER,
     API_METHOD_EVENT_SCHEDULER,
     API_VERSION_EVENT_SCHEDULER,
+    API_SORT_BY_NAME,
+    API_SORT_DIRECTION_ASC,
+    API_TASK_LIMIT,
+    API_TASK_OFFSET,
+    API_ENABLE_SYNO_TOKEN,
+    API_SYNO_TOKEN,
+    API_YES,
+    API_UNKNOWN,
+    DATA_KEY,
+    DATA_TASKS_KEY,
+    DATA_SID_KEY,
+    DATA_SYNOTOKEN_KEY,
+    DATA_SUCCESS_KEY,
+    DATA_ERROR_KEY,
+    DATA_CODE_KEY,
+    SERVICE_DATA_TASK_NAME,
+    API_WEBAPI_ENDPOINT,
+    PROTOCOL_HTTPS,
+    PROTOCOL_HTTP,
 )
 from .models import SynologyAuthData, Task, SynologyTaskData, SynologyResponse, SynologyTask
 
@@ -39,7 +58,7 @@ class SynologyDSM:
         self._verify_ssl = dsm_entry.data.get("verify_ssl", True)
         self._username = dsm_entry.data.get("username")
         self._password = dsm_entry.data.get("password")
-        self._url = f"{ssl and 'https' or 'http'}://{host}:{port}/webapi/entry.cgi"
+        self._url = f"{ssl and PROTOCOL_HTTPS or PROTOCOL_HTTP}://{host}:{port}{API_WEBAPI_ENDPOINT}"
 
         self._session = None
         self._sid = None
@@ -52,10 +71,10 @@ class SynologyDSM:
             "api": API_TASK_SCHEDULER,
             "method": API_METHOD_TASK_SCHEDULER,
             "version": API_VERSION_TASK_SCHEDULER,
-            "sort_by": "name",
-            "sort_direction": "asc",
-            "limit": "50",
-            "offset": "0",
+            "sort_by": API_SORT_BY_NAME,
+            "sort_direction": API_SORT_DIRECTION_ASC,
+            "limit": API_TASK_LIMIT,
+            "offset": API_TASK_OFFSET,
         }
 
         try:
@@ -64,8 +83,8 @@ class SynologyDSM:
             _LOGGER.error("Error getting tasks: %s", err)
             raise SynologyTaskRunError from err
 
-        tasks_data: SynologyTaskData = response.get("data", {})
-        tasks: List[SynologyTask] = tasks_data.get("tasks", [])
+        tasks_data: SynologyTaskData = response.get(DATA_KEY, {})
+        tasks: List[SynologyTask] = tasks_data.get(DATA_TASKS_KEY, [])
         return [Task.from_api(task) for task in tasks]
 
 
@@ -75,7 +94,7 @@ class SynologyDSM:
             "api": API_EVENT_SCHEDULER,
             "method": API_METHOD_EVENT_SCHEDULER,
             "version": API_VERSION_EVENT_SCHEDULER,
-            "task_name": task_name
+            SERVICE_DATA_TASK_NAME: task_name
         }
 
         try:
@@ -94,15 +113,15 @@ class SynologyDSM:
             "api": API_LOGIN,
             "version": API_VERSION_LOGIN,
             "method": API_METHOD_LOGIN,
-            "enable_syno_token": "yes",
+            API_ENABLE_SYNO_TOKEN: API_YES,
             "account": self._username,
             "passwd": self._password,
         }
 
         response = self._sync_request(params, True)
-        data: SynologyAuthData = response.get("data", {})
-        self._sid = data.get("sid")
-        self._synotoken = data.get("synotoken")
+        data: SynologyAuthData = response.get(DATA_KEY, {})
+        self._sid = data.get(DATA_SID_KEY)
+        self._synotoken = data.get(DATA_SYNOTOKEN_KEY)
 
 
     def _sync_request(self, params: dict | None = None, is_login: bool = False) -> SynologyResponse:
@@ -110,7 +129,7 @@ class SynologyDSM:
         if not is_login and (not self._sid or not self._synotoken or not self._session):
             self._sync_login()
         
-        params["SynoToken"] = self._synotoken
+        params[API_SYNO_TOKEN] = self._synotoken
 
         response: SynologyResponse | None = None
         try:
@@ -120,9 +139,9 @@ class SynologyDSM:
             _LOGGER.error("Error requesting: %s", err)
             raise SynologyDSMAPIErrorException from err
 
-        if not response.get("success", False):
+        if not response.get(DATA_SUCCESS_KEY, False):
             _LOGGER.error("Error requesting: %s", r.text)
-            error_code = response.get("error", {}).get("code", "Unknown")
+            error_code = response.get(DATA_ERROR_KEY, {}).get(DATA_CODE_KEY, API_UNKNOWN)
             raise SynologyDSMAPIErrorException(f"Received error code: {error_code}")
 
         return response

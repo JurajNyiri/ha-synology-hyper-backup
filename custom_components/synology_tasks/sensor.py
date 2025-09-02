@@ -28,6 +28,14 @@ from .const import (
     ATTR_TASK_TYPE,
     DOMAIN,
     KEY_STATUS,
+    CONFIG_DEVICE_IDENTIFIERS,
+    CONFIG_DEVICE_NAME,
+    CONFIG_DEVICE_MANUFACTURER,
+    CONFIG_DEVICE_MODEL,
+    CONFIG_DEVICE_SW_VERSION,
+    STATE_ENABLED,
+    STATE_DISABLED,
+    TRANSLATION_KEY_TASK_STATUS,
 )
 from .coordinator import SynologyTasksCoordinator
 from .models import Task
@@ -45,9 +53,9 @@ class SynologyTaskSensorEntityDescription(SensorEntityDescription):
 TASK_SENSORS = [
     SynologyTaskSensorEntityDescription(
         key=KEY_STATUS,
-        translation_key="task_status",
+        translation_key=TRANSLATION_KEY_TASK_STATUS,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda task: "enabled" if task.enabled else "disabled",
+        value_fn=lambda task: STATE_ENABLED if task.enabled else STATE_DISABLED,
     ),
 ]
 
@@ -75,13 +83,13 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
         self._attr_unique_id = f"{task_name_id}_{task.id}_{entity_description.key}"
         
         # Set device info from the Synology DSM device
-        if config_entry.data.get("device_identifiers"):
+        if config_entry.data.get(CONFIG_DEVICE_IDENTIFIERS):
             self._attr_device_info = DeviceInfo(
-                identifiers=config_entry.data["device_identifiers"],
-                name=config_entry.data.get("device_name"),
-                manufacturer=config_entry.data.get("device_manufacturer"),
-                model=config_entry.data.get("device_model"),
-                sw_version=config_entry.data.get("device_sw_version"),
+                identifiers=config_entry.data[CONFIG_DEVICE_IDENTIFIERS],
+                name=config_entry.data.get(CONFIG_DEVICE_NAME),
+                manufacturer=config_entry.data.get(CONFIG_DEVICE_MANUFACTURER),
+                model=config_entry.data.get(CONFIG_DEVICE_MODEL),
+                sw_version=config_entry.data.get(CONFIG_DEVICE_SW_VERSION),
             )
         
         # Set a clean display name - just the task name

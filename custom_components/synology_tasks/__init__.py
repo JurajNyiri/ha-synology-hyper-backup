@@ -9,7 +9,14 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.typing import ConfigType
 
-from .const import CONF_COORDINATOR, DOMAIN, PLATFORMS, SERVICE_RUN_TASK
+from .const import (
+    CONF_COORDINATOR,
+    DOMAIN,
+    PLATFORMS,
+    SERVICE_RUN_TASK,
+    CONFIG_DSM_ENTRY_ID,
+    SERVICE_DATA_TASK_NAME,
+)
 from .coordinator import SynologyTasksCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,7 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         dsm_entry = next(
             e
             for e in hass.config_entries.async_entries(SYNOLOGY_DOMAIN)
-            if e.entry_id == entry.data.get("dsm_entry_id")
+            if e.entry_id == entry.data.get(CONFIG_DSM_ENTRY_ID)
         )
 
         # Fetch initial data so we have data when entities subscribe
@@ -54,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register services
     async def async_run_task_service(call: ServiceCall) -> None:
         """Run a task by name."""
-        await coordinator.api.run_task(call.data["task_name"])
+        await coordinator.api.run_task(call.data[SERVICE_DATA_TASK_NAME])
 
     hass.services.async_register(
         DOMAIN,
