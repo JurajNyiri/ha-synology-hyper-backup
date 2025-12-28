@@ -4,6 +4,16 @@ This integration extends the official [Synology DSM integration](https://www.hom
 
 All entities are grouped under the same device as your existing Synology DSM integration, keeping everything organized.
 
+## Installation
+
+Copy contents of custom_components/synology_hyper_backup/ to custom_components/synology_hyper_backup/ in your Home Assistant config folder.
+
+## Installation using HACS
+
+Add this repository as custom repository.
+
+HACS is a community store for Home Assistant. You can install [HACS](https://github.com/custom-components/hacs) and then install Synology Hyper Backup from the HACS store.
+
 ## Security Notice
 
 **Important:** This integration reuses the credentials from your existing Synology DSM integration to authenticate with your NAS against the DSM API. It only accesses the specific NAS device that you configure with this integration. If you are not comfortable with this credential sharing approach, please do not use this integration.
