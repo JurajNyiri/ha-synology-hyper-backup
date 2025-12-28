@@ -4,9 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_UNKNOWN
-from homeassistant.components.sensor import (
-    SensorEntity,
-)
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -18,7 +16,6 @@ from .const import (
     CONFIG_DEVICE_NAME,
     CONFIG_DEVICE_SW_VERSION,
     DOMAIN,
-    LOGGER,
 )
 from .coordinator import SynologyTasksCoordinator
 
@@ -49,6 +46,9 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
         self.unique_id = self._attr_unique_id
         self.task = task
         self.key = key
+        self._state_is_numeric = self._is_numeric(task.get(key))
+        if self._state_is_numeric:
+            self._attr_state_class = SensorStateClass.MEASUREMENT
 
         # Set device info from the Synology DSM device
         if config_entry.data.get(CONFIG_DEVICE_IDENTIFIERS):
@@ -74,6 +74,10 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
         if not (task := self._get_task()):
             return None
         value = task.get(self.key)
+        if self._state_is_numeric:
+            numeric_value = self._coerce_numeric(value)
+            if numeric_value is not None:
+                return numeric_value
         if isinstance(value, (dict, list)):
             # Keep state simple; detailed payload goes to attributes
             return STATE_UNKNOWN
@@ -82,7 +86,6 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
     @property
     def extra_state_attributes(self) -> dict[str, str | int | bool | datetime | None]:
         """Return the state attributes."""
-        """Return the state of the sensor."""
         if not (task := self._get_task()):
             return None
         value = task.get(self.key)
@@ -104,6 +107,36 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
             ),
             None,
         )
+
+    @staticmethod
+    def _is_numeric(value) -> bool:
+        """Check if a value is numeric or a numeric string."""
+        if isinstance(value, bool):
+            return False
+        if isinstance(value, (int, float)):
+            return True
+        if isinstance(value, str):
+            try:
+                float(value)
+                return True
+            except (TypeError, ValueError):
+                return False
+        return False
+
+    @staticmethod
+    def _coerce_numeric(value):
+        """Convert a value to int or float if possible."""
+        if isinstance(value, bool) or value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return value
+        if isinstance(value, str):
+            try:
+                as_float = float(value)
+                return int(as_float) if as_float.is_integer() else as_float
+            except (TypeError, ValueError):
+                return None
+        return None
 
 
 async def async_setup_entry(
