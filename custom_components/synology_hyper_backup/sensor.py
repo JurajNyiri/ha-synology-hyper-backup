@@ -65,7 +65,7 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
             )
 
         # Set a clean display name - just the task name
-        self._attr_name = f"{name} - {key}"
+        self._attr_name = f"Hyper Backup: {name} - {key}"
         self._attr_has_entity_name = False
 
     @property
