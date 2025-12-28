@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.const import STATE_UNKNOWN
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -47,8 +47,6 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
         self.task = task
         self.key = key
         self._state_is_numeric = self._is_numeric(task.get(key))
-        if self._state_is_numeric:
-            self._attr_state_class = SensorStateClass.MEASUREMENT
 
         # Set device info from the Synology DSM device
         if config_entry.data.get(CONFIG_DEVICE_IDENTIFIERS):
