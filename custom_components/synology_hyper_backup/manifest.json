@@ -1,0 +1,19 @@
+{
+    "domain": "synology_hyper_backup",
+    "name": "Synology Hyper Backup",
+    "codeowners": [
+        "@JurajNyiri"
+    ],
+    "config_flow": true,
+    "dependencies": [
+        "synology_dsm"
+    ],
+    "documentation": "https://github.com/JurajNyiri/ha-synology-hyper-backup",
+    "integration_type": "hub",
+    "iot_class": "local_polling",
+    "issue_tracker": "https://github.com/JurajNyiri/ha-synology-hyper-backup/issues",
+    "requirements": [
+        "synology_api==0.8.2"
+    ],
+    "version": "0.1.0"
+}

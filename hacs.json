@@ -1,5 +1,5 @@
 {
-    "name": "Synology Tasks",
+    "name": "Synology Hyper Backup",
     "homeassistant": "2025.8.3",
     "hacs": "2.0.5"
 }

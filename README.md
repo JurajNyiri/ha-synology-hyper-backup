@@ -1,9 +1,6 @@
-# Synology Tasks HACS Integration
+# Synology Hyper Backup
 
-This integration extends the official [Synology DSM integration](https://www.home-assistant.io/integrations/synology_dsm/) in Home Assistant to provide control over your Synology NAS scheduled tasks. It automatically discovers all scheduled tasks configured on your NAS and creates:
-
-- A **button entity** for each task to manually trigger it
-- A **sensor entity** for each task to show its current status
+This integration extends the official [Synology DSM integration](https://www.home-assistant.io/integrations/synology_dsm/) in Home Assistant to provide sensors for Hyper Backup.
 
 All entities are grouped under the same device as your existing Synology DSM integration, keeping everything organized.
 
@@ -19,32 +16,7 @@ All entities are grouped under the same device as your existing Synology DSM int
 
 ## Limitations & Disclaimers
 
-This is a very early alpha integration that I've developed for my own use. While it works in my single NAS setup, it hasn't been extensively tested.
+Integration code is partially based on integration https://github.com/bbckr/ha-synology-tasks (at 2025-12-28) which achieves a similar use case - synology tasks.
 
-Feel free to open issues if you encounter problems or have suggestions for improving the quality of the integration.
-
-## Local Development
-
-### Requirements
-
-- Docker or Podman
-- pipx
-- Poetry
-    ```
-    pipx install poetry
-    ```
-
-## Debugging against Home Assistant Locally
-
-1. Run `docker-compose up`
-1. Open http://0.0.0.0:8123 in your browser
-1. Setup the first user
-1. Install the **Remote Python Debugger** by adding the following to your configuration.yaml:
-    ```
-    debugpy:
-    start: true
-    wait: false
-    ```
-1. Run the **Home Assistant: Attach Remote** launch.json configuration
-1. Set your breakpoints
-1. Profit
+It is modified to instead get information about Hyper Backup and use library synology_api instead of direct API requests. 
+It is also very early version I put together within a few hours just to get the sensors in, breaking changes are to be expected.

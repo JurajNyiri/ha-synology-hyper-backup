@@ -12,9 +12,9 @@
       },
       "pathMappings": [
         {
-          "localRoot": "${workspaceFolder}/custom_components/synology_tasks",
-          "remoteRoot": "/config/custom_components/synology_tasks"
-        } 
+          "localRoot": "${workspaceFolder}/custom_components/synology_hyper_backup",
+          "remoteRoot": "/config/custom_components/synology_hyper_backup"
+        }
       ],
       "justMyCode": false
     }
