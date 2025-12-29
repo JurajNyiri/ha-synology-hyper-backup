@@ -166,19 +166,21 @@ async def async_setup_entry(
 
         return entities
 
-    task_list = coordinator.data.get("task_list")
+    task_list = coordinator.data.get("task_list", [])
+    initial_entities = _create_entities(task_list)
 
     # Create initial entities
-    async_add_entities(_create_entities(task_list))
+    async_add_entities(initial_entities)
 
     # Track existing entity IDs to avoid duplicates
-    existing_ids = {entity.unique_id for entity in _create_entities(task_list)}
+    existing_ids = {entity.unique_id for entity in initial_entities}
 
     @callback
     def _async_update_entities() -> None:
         """Create new entities for new tasks."""
         new_entities = []
-        current_entities = _create_entities(task_list)
+        current_tasks = coordinator.data.get("task_list", [])
+        current_entities = _create_entities(current_tasks)
 
         for entity in current_entities:
             if entity.unique_id not in existing_ids:

@@ -32,7 +32,6 @@ async def async_setup(hass: HomeAssistant, _: ConfigType) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    LOGGER.warning("async_setup_entry")
     """Set up Synology Tasks from a config entry."""
     try:
         # Get synology_dsm entry to create the SynologyDSM client.
