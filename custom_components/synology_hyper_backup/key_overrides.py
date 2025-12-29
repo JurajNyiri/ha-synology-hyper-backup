@@ -24,20 +24,17 @@ KEY_OVERRIDES: dict[str, KeyOverride] = {
     "status_progress_progress": KeyOverride(
         name="Progress",
         unit=PERCENTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
         numeric=True,
     ),
     "status_progress_total_size": KeyOverride(
         name="Progress: Total Size",
         unit=UnitOfInformation.BYTES,
-        state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_SIZE,
         numeric=True,
     ),
     "status_progress_processed_size": KeyOverride(
         name="Progress: Processed Size",
         unit=UnitOfInformation.BYTES,
-        state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_SIZE,
         numeric=True,
     ),
@@ -49,7 +46,6 @@ KEY_OVERRIDES: dict[str, KeyOverride] = {
     "status_progress_transmitted_size": KeyOverride(
         name="Progress: Transmitted Size",
         unit=UnitOfInformation.BYTES,
-        state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DATA_SIZE,
         numeric=True,
     ),
