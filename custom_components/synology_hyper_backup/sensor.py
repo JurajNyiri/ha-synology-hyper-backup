@@ -3,7 +3,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from homeassistant.const import STATE_UNKNOWN
+from homeassistant.const import PERCENTAGE, STATE_UNKNOWN
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -18,6 +18,7 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import SynologyTasksCoordinator
+from .key_overrides import KEY_OVERRIDES, KeyOverride
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -46,7 +47,30 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
         self.unique_id = self._attr_unique_id
         self.task = task
         self.key = key
-        self._state_is_numeric = self._is_numeric(task.get(key))
+
+        override: KeyOverride | None = KEY_OVERRIDES.get(key)
+        self._numeric_expected = (
+            override.numeric
+            if override and override.numeric is not None
+            else self._is_numeric(task.get(key))
+        )
+        self._attr_name = (
+            f"Hyper Backup: {name} - {override.name}"
+            if override and override.name
+            else f"Hyper Backup: {name} - {key}"
+        )
+        if override:
+            if override.unit:
+                self._attr_native_unit_of_measurement = override.unit
+            if override.state_class:
+                self._attr_state_class = override.state_class
+            if override.device_class:
+                self._attr_device_class = override.device_class
+        else:
+            # Fallback: treat keys containing 'progress' as percentage
+            if "progress" in key:
+                self._attr_native_unit_of_measurement = PERCENTAGE
+                self._numeric_expected = True
 
         # Set device info from the Synology DSM device
         if config_entry.data.get(CONFIG_DEVICE_IDENTIFIERS):
@@ -62,8 +86,6 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
                 sw_version=config_entry.data.get(CONFIG_DEVICE_SW_VERSION),
             )
 
-        # Set a clean display name - just the task name
-        self._attr_name = f"Hyper Backup: {name} - {key}"
         self._attr_has_entity_name = False
 
     @property
@@ -72,10 +94,17 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
         if not (task := self._get_task()):
             return None
         value = task.get(self.key)
-        if self._state_is_numeric:
+        if self._numeric_expected or self._is_numeric(value):
             numeric_value = self._coerce_numeric(value)
             if numeric_value is not None:
                 return numeric_value
+            if self._numeric_expected:
+                return None
+        # For sensors expected to be numeric with a unit, avoid emitting non-numeric states
+        if self._numeric_expected:
+            return None
+        if isinstance(value, str) and value.lower() == "unknown":
+            return None
         if isinstance(value, (dict, list)):
             # Keep state simple; detailed payload goes to attributes
             return STATE_UNKNOWN
