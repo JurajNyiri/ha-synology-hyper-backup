@@ -66,11 +66,6 @@ class SynologyTaskSensor(CoordinatorEntity[SynologyTasksCoordinator], SensorEnti
                 self._attr_state_class = override.state_class
             if override.device_class:
                 self._attr_device_class = override.device_class
-        else:
-            # Fallback: treat keys containing 'progress' as percentage
-            if "progress" in key:
-                self._attr_native_unit_of_measurement = PERCENTAGE
-                self._numeric_expected = True
 
         # Set device info from the Synology DSM device
         if config_entry.data.get(CONFIG_DEVICE_IDENTIFIERS):
