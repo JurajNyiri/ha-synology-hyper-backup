@@ -8,6 +8,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from synology_api.core_backup import Backup
 
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .utils import search_logs
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,7 +46,17 @@ class SynologyTasksCoordinator(DataUpdateCoordinator[list[dict]]):
             if data is None:
                 raise Exception("Unexpected data returned from Synology.")
 
+            hb_logs_resp = await self.hass.async_add_executor_job(
+                self.synology_backup.hb_logs_get,
+                1000,
+                0,
+                "Backup integrity check is finished. No error was found.",
+            )
+
+            log_list = hb_logs_resp.get("data", {}).get("log_list", [])
+
             for task in data.get("task_list"):
+                latest_ic = search_logs(log_list, task.get("name"))
                 last_result = await self.hass.async_add_executor_job(
                     self.synology_backup.backup_task_result, task.get("task_id")
                 )
@@ -57,6 +68,9 @@ class SynologyTasksCoordinator(DataUpdateCoordinator[list[dict]]):
                 self._merge_with_prefix(task, last_result, "last_result_")
                 self._merge_with_prefix(task, status, "status_")
                 self._merge_with_prefix(task, status_progress, "status_progress_")
+
+                if log_list and latest_ic:
+                    self._merge_with_prefix(task, latest_ic, "integrity_check_")
 
             return data
         except Exception as err:
